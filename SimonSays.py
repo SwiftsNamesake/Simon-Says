@@ -45,7 +45,7 @@ def play(initial=4, cap=20):
 		# remembered = yield #
 		remembered = yield sequence
 		print('Yielded sequence and accepted guess: ', remembered)
-		yield True #sequence == remembered #all((guess == right) for guess, right in zip(sequence, remembered)) # TODO: Compare with == (?)
+		yield sequence == remembered #all((guess == right) for guess, right in zip(sequence, remembered)) # TODO: Compare with == (?)
 		print('Yielded result')
 
 
@@ -100,15 +100,22 @@ def interact():
 	print('First sequence: ', State.sequence)
 
 	# TODO: Suspend guessing meanwhile
-	def show(item):
+	def show(item, rest):
 		# TODO: Deal with async issues (crops up all the time...)
 		# def frames():
-		print('Showing...')
-		print(fromOp)
-		fill = canvas.itemcget(item, 'fill')
-		canvas.itemconfig(item, fill='orange')
-		canvas.itemconfig(item, fill=fill)
-
+		print('Showing item')
+		fill = canvas.itemcget(fromOp[item], 'fill')
+		canvas.itemconfig(fromOp[item], fill='orange')
+		def shownext():
+			try:
+				print('Resetting fill')
+				canvas.itemconfig(fromOp[item], fill=fill)
+				show(rest[0], rest[1:])
+			except IndexError:
+				print('Stopping animation')
+				pass
+		print('Scheduling...')
+		frame.after(400, shownext)
 
 	def click(option, id):
 		def onclick(ev):
@@ -124,13 +131,13 @@ def interact():
 					print('You\'re supposed to do as I do!')
 				State.sequence = next(game) # TODO: Check if it has next
 				State.remembered = []
-				show(State.sequence)
+				frame.after(1500, lambda: show(State.sequence[0], State.sequence[1:])) # Another round
 		return onclick
 
 	for option, ID in zip(options, (red, green, yellow, blue)):
 		canvas.tag_bind(ID, '<1>', func=click(option, ID))
 
-	frame.after(400, lambda: show(State.sequence))
+	frame.after(400, lambda: show(State.sequence[0], State.sequence[1:]))
 	frame.mainloop()
 
 	# for attempt in game:
