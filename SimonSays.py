@@ -20,6 +20,7 @@ from collections import namedtuple
 
 import tkinter as tk
 import time
+import re
 
 
 
@@ -74,9 +75,11 @@ def interact():
 	frame.geometry('{0}x{1}'.format(*size))
 	frame.resizable(width=False, height=False)
 
+	#
 	canvas = tk.Canvas(width=size.width, height=size.height)
 	canvas.pack()
 
+	#
 	width = size.width//2 # Width of each square
 
 	corners = ((0,0), (width,0), (0,width), (width,width))
@@ -85,10 +88,15 @@ def interact():
 	squares = red, green, yellow, blue
 
 	# red.value, green.value, yellow.value, blue.value = next(game) # TODO: Save options somewhere else (?)
+
+	#
 	options = next(game) #
 
 	fromID = dict(zip(squares, options)) # TODO: Rename (?)
 	fromOp = dict(zip(options, squares)) # TODO: Rename (from option) (?)
+
+	clamp = lambda val, mn=0, mx=255: sorted((mn, mx, val))[1]
+	RGB = lambda r,g,b: '#%02X%02X%02X' % (clamp(int(r)), clamp(int(g)), clamp(int(b))) #
 
 	class State:
 		# TODO: Rename (?)
@@ -103,21 +111,28 @@ def interact():
 	def show(items):
 		# TODO: Deal with async issues (crops up all the time...)
 		# TODO: whenDone callback (?)
+		# TODO: Rename arguments (?)
 		item, rest = items[0], items[1:]
-		fill = canvas.itemcget(fromOp[item], 'fill')
-		canvas.itemconfig(fromOp[item], fill='orange')
+		highlight(item, fromOp[item], delta=40)
 
 		def shownext():
-			canvas.itemconfig(fromOp[item], fill=fill)
+			# TODO: Un-nest (?)
+			reset(item, fromOp[item], delta=40)
 			if len(rest) > 0:
 				frame.after(150, lambda: show(rest)) # Wait before showing the next
 
 		frame.after(400, shownext)
 
-	def reset(option, ID):
-		# Opposite of show
-		fill = canvas.cget('fill') # TODO: Don't hardcode deltas
-		canvas.itemconfig(ID, fill=(r-20,g-20,b-20)) # TODO: Handle invalid
+	def highlight(option, ID, delta=40):
+		# TODO: Utility for manipulating colours
+		# TODO: Don't hardcode values
+		fill = canvas.itemcget(ID, 'fill') # TODO: Don't hardcode deltas
+		r, g, b = int(fill[1:3], 16), int(fill[3:5], 16), int(fill[5:7], 16)
+		canvas.itemconfig(ID, fill=RGB(r+delta,g+delta,b+delta)) # TODO: Handle invalid
+
+	def reset(option, ID, delta=40):
+		# Opposite of highlight
+		highlight(option, ID, delta=-delta)
 
 	def space(event):
 		if not State.ongoing:
@@ -127,11 +142,12 @@ def interact():
 			State.ongoing = True
 			frame.after(200, lambda: show(State.sequence)) # Another round
 
-	def click(option, id):
+	def click(option, ID):
 		def onclick(ev):
 			# TODO: Check if we're ready to accept input
 			if not State.ongoing:
 				return
+			highlight(option, ID)
 			State.remembered.append(option)
 			if len(State.remembered) == len(State.sequence):
 				correct = game.send(State.remembered)
@@ -139,13 +155,16 @@ def interact():
 				# TODO: Performance-dependent feedback (eg. length of chain, delay)
 				if correct:
 					print('Hurray! You remembered correctly')
+					canvas.itemconfig(State.message, text='Hurray! You remembered correctly')
 				else:
 					print('You\'re supposed to do as I do!')
+					canvas.itemconfig(State.message, text='You\'re supposed to do as I do!')
 				State.sequence = next(game) # TODO: Check if it has next
 				State.remembered = []
 				print('Press space to continue')
 				State.ongoing = False
 				canvas.itemconfig(State.message, state=tk.NORMAL)
+				frame.after(1500, lambda: canvas.itemconfig(State.message, text='Space to start'))
 				# frame.after(1500, lambda: show(State.sequence)) # Another round
 		return onclick
 
