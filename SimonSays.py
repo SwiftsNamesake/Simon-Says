@@ -40,9 +40,7 @@ def play(initial=4, cap=20):
 	yield options #
 
 	for chain in range(initial, cap+1):
-		sequence   = [choice(options) for n in range(chain)] # Random sequence of colours
-		# yield sequence
-		# remembered = yield #
+		sequence = [choice(options) for n in range(chain)] # Random sequence of colours
 		remembered = yield sequence
 		print('Yielded sequence and accepted guess: ', remembered)
 		yield sequence == remembered #all((guess == right) for guess, right in zip(sequence, remembered)) # TODO: Compare with == (?)
@@ -82,8 +80,8 @@ def interact():
 	width = size.width//2 # Width of each square
 
 	corners = ((0,0), (width,0), (0,width), (width,width))
-	colours = ('red', 'green', 'yellow', 'blue')
-	red, green, yellow, blue = (canvas.create_rectangle(pos, (pos[0]+width, pos[1]+width), fill=col) for pos, col in zip(corners, colours))
+	colours = ((0xFF, 0x0, 0x0), (0x0, 0xFF, 0x0), (0xEE, 0xFF, 0x12), (0x0, 0x0, 0xFF)) #('red', 'green', 'yellow', 'blue')
+	red, green, yellow, blue = (canvas.create_rectangle(pos, (pos[0]+width, pos[1]+width), fill='#%02x%02x%02x'%col) for pos, col in zip(corners, colours))
 	squares = red, green, yellow, blue
 
 	# red.value, green.value, yellow.value, blue.value = next(game) # TODO: Save options somewhere else (?)
@@ -96,12 +94,15 @@ def interact():
 		# TODO: Rename (?)
 		remembered = []
 		sequence = next(game) #
+		ongoing = False
+		message = canvas.create_text((size.width//2, size.height//2), text='Space to start', anchor=tk.CENTER, fill='black', font=('Tahoma', 35))
 
 	print('First sequence: ', State.sequence)
 
 	# TODO: Suspend guessing meanwhile
 	def show(items):
 		# TODO: Deal with async issues (crops up all the time...)
+		# TODO: whenDone callback (?)
 		item, rest = items[0], items[1:]
 		fill = canvas.itemcget(fromOp[item], 'fill')
 		canvas.itemconfig(fromOp[item], fill='orange')
@@ -109,12 +110,28 @@ def interact():
 		def shownext():
 			canvas.itemconfig(fromOp[item], fill=fill)
 			if len(rest) > 0:
-				show(rest)
+				frame.after(150, lambda: show(rest)) # Wait before showing the next
 
 		frame.after(400, shownext)
 
+	def reset(option, ID):
+		# Opposite of show
+		fill = canvas.cget('fill') # TODO: Don't hardcode deltas
+		canvas.itemconfig(ID, fill=(r-20,g-20,b-20)) # TODO: Handle invalid
+
+	def space(event):
+		if not State.ongoing:
+			# TODO: Countdown
+			print('New round...')
+			canvas.itemconfig(State.message, state=tk.HIDDEN)
+			State.ongoing = True
+			frame.after(200, lambda: show(State.sequence)) # Another round
+
 	def click(option, id):
 		def onclick(ev):
+			# TODO: Check if we're ready to accept input
+			if not State.ongoing:
+				return
 			State.remembered.append(option)
 			if len(State.remembered) == len(State.sequence):
 				correct = game.send(State.remembered)
@@ -126,13 +143,17 @@ def interact():
 					print('You\'re supposed to do as I do!')
 				State.sequence = next(game) # TODO: Check if it has next
 				State.remembered = []
-				frame.after(1500, lambda: show(State.sequence)) # Another round
+				print('Press space to continue')
+				State.ongoing = False
+				canvas.itemconfig(State.message, state=tk.NORMAL)
+				# frame.after(1500, lambda: show(State.sequence)) # Another round
 		return onclick
 
 	for option, ID in zip(options, (red, green, yellow, blue)):
 		canvas.tag_bind(ID, '<1>', func=click(option, ID))
+		canvas.tag_bind(ID, '<ButtonRelease-1>', func=lambda e: reset(option, ID)) # Reset colour
 
-	frame.after(400, lambda: show(State.sequence))
+	frame.bind('<space>', space)
 	frame.mainloop()
 
 	# for attempt in game:
