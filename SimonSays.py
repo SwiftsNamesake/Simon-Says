@@ -1,6 +1,6 @@
 #
 # SimonSays.py
-# description
+# Inspired by Etho
 #
 # Jonatan H Sundqvist
 # February 11 2015
@@ -9,10 +9,145 @@
 # TODO | - Better name (?)
 #        -
 #
-# SPEC | -
+# SPEC | - https://www.youtube.com/watch?v=lMlgFLK0mcY
 #        -
 
 
 
-def function():
-	pass
+from random import shuffle, choice
+from enum import Enum
+from collections import namedtuple
+
+import tkinter as tk
+import time
+
+
+
+def play(initial=4, cap=20):
+
+	'''
+	Play a game of Simon Says
+
+	'''
+
+	# TODO: Configurable 'problem' space
+	# TODO: Other signals (eg. are there any more rounds)
+	# TODO: Infinite feed (?)
+
+	Colours = Enum('Colours', 'Red Green Yellow Blue')
+	options = [c for c in Colours]
+
+	yield options #
+
+	for chain in range(initial, cap+1):
+		sequence   = [choice(options) for n in range(chain)] # Random sequence of colours
+		# yield sequence
+		# remembered = yield #
+		remembered = yield sequence
+		print('Yielded sequence and accepted guess: ', remembered)
+		yield True #sequence == remembered #all((guess == right) for guess, right in zip(sequence, remembered)) # TODO: Compare with == (?)
+		print('Yielded result')
+
+
+
+def interact():
+
+	'''
+	User interaction for the Simon Says game
+
+	'''
+
+	# TODO: Use pygame (?)
+	# TODO: Animations, sound
+	# TODO: Fancy interface
+	# TODO: Configuration (cf. play)
+
+	print('Simon Says do as I do and all will be well')
+
+	# Game logic
+	game = play()
+
+	# Configurations
+	size = namedtuple('Size', 'width height')(400, 400)
+
+	# Create and customise window
+	frame = tk.Tk()
+	frame.title('Simon Says')
+	frame.geometry('{0}x{1}'.format(*size))
+	frame.resizable(width=False, height=False)
+
+	canvas = tk.Canvas(width=size.width, height=size.height)
+	canvas.pack()
+
+	width = size.width//2 # Width of each square
+
+	corners = ((0,0), (width,0), (0,width), (width,width))
+	colours = ('red', 'green', 'yellow', 'blue')
+	red, green, yellow, blue = (canvas.create_rectangle(pos, (pos[0]+width, pos[1]+width), fill=col) for pos, col in zip(corners, colours))
+	squares = red, green, yellow, blue
+
+	# red.value, green.value, yellow.value, blue.value = next(game) # TODO: Save options somewhere else (?)
+	options = next(game) #
+
+	fromID = dict(zip(squares, options)) # TODO: Rename (?)
+	fromOp = dict(zip(options, squares)) # TODO: Rename (from option) (?)
+
+	class State:
+		# TODO: Rename (?)
+		remembered = []
+		sequence = next(game) #
+
+	print('First sequence: ', State.sequence)
+
+	# TODO: Suspend guessing meanwhile
+	def show(item):
+		# TODO: Deal with async issues (crops up all the time...)
+		# def frames():
+		print('Showing...')
+		print(fromOp)
+		fill = canvas.itemcget(item, 'fill')
+		canvas.itemconfig(item, fill='orange')
+		canvas.itemconfig(item, fill=fill)
+
+
+	def click(option, id):
+		def onclick(ev):
+			State.remembered.append(option)
+			if len(State.remembered) == len(State.sequence):
+				correct = game.send(State.remembered)
+				print('Correct:', correct)
+				# TODO: Graphical feedback
+				# TODO: Performance-dependent feedback (eg. length of chain, delay)
+				if correct:
+					print('Hurray! You remembered correctly')
+				else:
+					print('You\'re supposed to do as I do!')
+				State.sequence = next(game) # TODO: Check if it has next
+				State.remembered = []
+				show(State.sequence)
+		return onclick
+
+	for option, ID in zip(options, (red, green, yellow, blue)):
+		canvas.tag_bind(ID, '<1>', func=click(option, ID))
+
+	frame.after(400, lambda: show(State.sequence))
+	frame.mainloop()
+
+	# for attempt in game:
+		# game.send("hello")
+
+
+
+def main():
+	
+	'''
+	Docstring goes here
+
+	'''
+
+	interact()
+
+
+
+if __name__ == '__main__':
+	main()
