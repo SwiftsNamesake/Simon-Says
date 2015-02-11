@@ -100,21 +100,17 @@ def interact():
 	print('First sequence: ', State.sequence)
 
 	# TODO: Suspend guessing meanwhile
-	def show(item, rest):
+	def show(items):
 		# TODO: Deal with async issues (crops up all the time...)
-		# def frames():
-		print('Showing item')
+		item, rest = items[0], items[1:]
 		fill = canvas.itemcget(fromOp[item], 'fill')
 		canvas.itemconfig(fromOp[item], fill='orange')
+
 		def shownext():
-			try:
-				print('Resetting fill')
-				canvas.itemconfig(fromOp[item], fill=fill)
-				show(rest[0], rest[1:])
-			except IndexError:
-				print('Stopping animation')
-				pass
-		print('Scheduling...')
+			canvas.itemconfig(fromOp[item], fill=fill)
+			if len(rest) > 0:
+				show(rest)
+
 		frame.after(400, shownext)
 
 	def click(option, id):
@@ -122,7 +118,6 @@ def interact():
 			State.remembered.append(option)
 			if len(State.remembered) == len(State.sequence):
 				correct = game.send(State.remembered)
-				print('Correct:', correct)
 				# TODO: Graphical feedback
 				# TODO: Performance-dependent feedback (eg. length of chain, delay)
 				if correct:
@@ -131,13 +126,13 @@ def interact():
 					print('You\'re supposed to do as I do!')
 				State.sequence = next(game) # TODO: Check if it has next
 				State.remembered = []
-				frame.after(1500, lambda: show(State.sequence[0], State.sequence[1:])) # Another round
+				frame.after(1500, lambda: show(State.sequence)) # Another round
 		return onclick
 
 	for option, ID in zip(options, (red, green, yellow, blue)):
 		canvas.tag_bind(ID, '<1>', func=click(option, ID))
 
-	frame.after(400, lambda: show(State.sequence[0], State.sequence[1:]))
+	frame.after(400, lambda: show(State.sequence))
 	frame.mainloop()
 
 	# for attempt in game:
