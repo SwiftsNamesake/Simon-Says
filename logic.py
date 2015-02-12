@@ -18,7 +18,6 @@ from random import shuffle, choice
 
 
 
-
 def play(initial=4, cap=20):
 
 	'''
