@@ -13,37 +13,12 @@
 #        -
 
 
+import tkinter as tk
 
-from random import shuffle, choice
 from enum import Enum
 from collections import namedtuple
 
-import tkinter as tk
-
-
-
-def play(initial=4, cap=20):
-
-	'''
-	Play a game of Simon Says
-
-	'''
-
-	# TODO: Configurable 'problem' space
-	# TODO: Other signals (eg. are there any more rounds)
-	# TODO: Infinite feed (?)
-
-	Colours = Enum('Colours', 'Red Green Yellow Blue')
-	options = [c for c in Colours]
-
-	yield options #
-
-	for chain in range(initial, cap+1):
-		sequence = [choice(options) for n in range(chain)] # Random sequence of colours
-		remembered = yield sequence
-		print('Yielded sequence and accepted guess: ', remembered)
-		yield sequence == remembered #all((guess == right) for guess, right in zip(sequence, remembered)) # TODO: Compare with == (?)
-		print('Yielded result')
+from logic import play
 
 
 
