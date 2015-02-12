@@ -8,7 +8,7 @@
 
 # TODO | - Better name (?)
 #        - Stats
-#        - Load settings, change during runtime1
+#        - Load settings, change during runtime (?)
 
 # SPEC | - https://www.youtube.com/watch?v=lMlgFLK0mcY
 #        -
@@ -192,7 +192,7 @@ class Simon(object):
 			self.frame.after(self.restartDelay, lambda: self.canvas.itemconfig(self.feedback, text='Space to start'))
 			# TODO: Add delay setting
 			# frame.after(1500, lambda: show(self.sequence)) # Another round
-			
+
 
 	def onSpace(self, event):
 
