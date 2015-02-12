@@ -7,8 +7,9 @@
 #
 
 # TODO | - Better name (?)
-#        -
-#
+#        - Stats
+#        - Load settings, change during runtime (?)
+
 # SPEC | - https://www.youtube.com/watch?v=lMlgFLK0mcY
 #        -
 
