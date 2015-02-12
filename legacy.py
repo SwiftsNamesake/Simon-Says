@@ -143,6 +143,7 @@ def interact():
 	def click(option, ID, down=True):
 		def onclick(ev):
 			# TODO: Check if we're ready to accept input
+			print('ev', dir(ev))
 			if not down:
 				reset(option, ID)
 				return
