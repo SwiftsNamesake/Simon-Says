@@ -8,7 +8,7 @@
 
 # TODO | - Better name (?)
 #        - Stats
-#        - Load settings, change during runtime (?)
+#        - Load settings, change during runtime1
 
 # SPEC | - https://www.youtube.com/watch?v=lMlgFLK0mcY
 #        -
@@ -87,7 +87,7 @@ class Simon(object):
 
 		# TODO: Use self.squares to refactor this mess
 		corners = ((0,0), (width,0), (0,width), (width,width))
-		colours = ((0xCC, 0x0, 0x0), (0x0, 0xCC, 0x0), (0xEE, 0xCC, 0x12), (0x0, 0x0, 0xCC)) #('red', 'green', 'yellow', 'blue')
+		colours = ((0xBB, 0x0, 0x0), (0x0, 0xBB, 0x0), (0xBB, 0xBB, 0x12), (0x0, 0x0, 0xBB)) #('red', 'green', 'yellow', 'blue')
 
 		# Mapping between options and associated data
 		# TODO: Don't hardcode
@@ -149,14 +149,25 @@ class Simon(object):
 
 		'''
 		
-		# TODO: Check if we're ready to accept input
-		if not self.responsive:
-			return
-		elif not self.ongoing:
+		# Check if we're ready to accept input
+		if not (self.responsive and self.ongoing):
 			return
 
 		self.highlight(square) #
 
+
+	def onLeftUp(self, event, square):
+
+		'''
+		Docstring goes here
+
+		'''
+
+		# TODO: Check if we're ready to accept input
+		if not (self.responsive and self.ongoing):
+			return
+
+		self.reset(square)
 		self.remembered.append(square.option)
 
 		if len(self.remembered) == len(self.sequence):
@@ -181,17 +192,7 @@ class Simon(object):
 			self.frame.after(self.restartDelay, lambda: self.canvas.itemconfig(self.feedback, text='Space to start'))
 			# TODO: Add delay setting
 			# frame.after(1500, lambda: show(self.sequence)) # Another round
-
-
-	def onLeftUp(self, event, square):
-
-		'''
-		Docstring goes here
-
-		'''
-		
-		self.reset(square)
-
+			
 
 	def onSpace(self, event):
 
@@ -218,7 +219,7 @@ class Simon(object):
 
 		'''
 		
-		tag = self.canvas.create_rectangle(pos, (pos[0]+width, pos[1]+width), fill='#%02x%02x%02x' % fill) # Canvas ID
+		tag = self.canvas.create_rectangle(pos, (pos[0]+width, pos[1]+width), fill='#%02x%02x%02x' % fill, width=0) # Canvas ID
 		return Simon.Square(option, tag, fill, pos, highlight)
 
 
