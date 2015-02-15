@@ -28,6 +28,12 @@ from math import ceil
 from logic import play
 
 
+# Pasted from interactive session
+# Move somewhere else
+# Maps 0-255 to 0.0-1.0
+unary = ['%.02f' % (ch/255) for ch in range(0,255, 8)]
+whole = ['%04d'  %  ch      for ch in range (0,255)  ]
+
 
 class Simon(object):
 
@@ -37,6 +43,7 @@ class Simon(object):
 	'''
 
 	Square = namedtuple('Option', 'option tag fill pos highlighted') # Encapsulates data for each option (ties it to the UI)
+	Size   = namedtuple('Size', 'width height')
 
 	def __init__(self):
 
@@ -81,7 +88,7 @@ class Simon(object):
 
 		# Interface configurations
 		# TODO: Adapt size and aspect ratio
-		self.size   = namedtuple('Size', 'width height')(400, 400) # TODO: Magic attribute (?)
+		self.size   = Simon.Size(400, 400) # TODO: Magic attribute (?)
 		self.centre = self.size.width//2, self.size.height//2      # TODO: Magic attribute (?)
 		
 		self.rowsize = ceil(self.noptions**0.5)
@@ -98,7 +105,7 @@ class Simon(object):
 
 		#
 		# TODO: Add configuration (don't hardcode options)
-		width = self.size.width//self.rowsize # Width of each square
+		tileSize = Simon.Size(self.size.width//self.rowsize, self.size.width//self.rowsize) # Width of each square
 
 		# TODO: Use self.squares to refactor this mess
 		colours = (0xBB, 0x0, 0x0), (0x0, 0xBB, 0x0), (0xBB, 0xBB, 0x12), (0x0, 0x0, 0xBB) #('red', 'green', 'yellow', 'blue')
@@ -106,8 +113,8 @@ class Simon(object):
 		shuffle(colours)
 		# Mapping between options and associated data
 		# TODO: Don't hardcode
-		pos = lambda index: (index%self.rowsize*width, index//self.rowsize*width)
-		self.squares = { option : self.createTile(option, pos(i), width, colours[i], dimmer(colours[i], 1.4)) for i, option in enumerate(self.options) }
+		pos = lambda index: (index%self.rowsize*tileSize.width, index//self.rowsize*tileSize.height)
+		self.squares = { option : self.createTile(option, pos(i), tileSize, colours[i], dimmer(colours[i], 1.4)) for i, option in enumerate(self.options) }
 
 		#
 		# We need to create the text after the squares, due to stacking (or move it up manually)
@@ -116,7 +123,8 @@ class Simon(object):
 		# TODO: Customisable font
 		# TODO: Store messages (?)
 		self.feedback = self.canvas.create_text((self.centre[0], self.centre[1]), text='Space to start', anchor=tk.CENTER, fill='black', font=('Tahoma', 32))
-
+		self.timer    = self.canvas.create_text((5, 5), text='00:00', fill='black', font=('Tahoma', 14), anchor=tk.N+tk.W)
+		self.elapsed  = 0
 
 		# And lastly, bind events
 		for n, (option, square) in enumerate(self.squares.items(), 1):
@@ -209,11 +217,16 @@ class Simon(object):
 		'''
 
 		# TODO: Move to method (✓)
+		print('Press space to continue')
+		
 		self.sequence = next(self.game) # TODO: Check if it has next
 		self.remembered = []
-		print('Press space to continue')
+		
 		self.ongoing    = False #
 		self.responsive = False # No longer accepting 'guesses'
+
+		self.elapsed = 0
+
 		self.canvas.itemconfig(self.feedback, state=tk.NORMAL)
 		self.frame.after(self.restartDelay, lambda: self.canvas.itemconfig(self.feedback, text='Space to start'))
 		# TODO: Add delay setting (✓)
@@ -235,16 +248,17 @@ class Simon(object):
 			self.ongoing = True
 			# TODO: Add delay setting
 			self.frame.after(self.startDelay, lambda: self.say(self.sequence)) # Another round
+			# self.frame.after(self.startDelay, lambda: self.tick(dt=1000))
 
 
-	def createTile(self, option, pos, width, fill, highlight):
+	def createTile(self, option, pos, size, fill, highlight):
 
 		'''
 		Docstring goes here
 
 		'''
 		
-		tag = self.canvas.create_rectangle(pos, (pos[0]+width, pos[1]+width), fill='#%02x%02x%02x' % fill, width=0) # Canvas ID
+		tag = self.canvas.create_rectangle(pos, (pos[0]+size.width, pos[1]+size.height), fill='#%02x%02x%02x' % fill, width=0) # Canvas ID
 		return Simon.Square(option, tag, fill, pos, highlight)
 
 
@@ -263,6 +277,12 @@ class Simon(object):
 	def unhighlight(self, square):
 		# TODO: Better name (?)
 		self.highlight(square, reset=True)
+
+
+	def tick(self, dt=1000):
+		self.elapsed += 1
+		self.canvas.itemconfig(self.timer, text='%02d:%02d' % (self.elapsed//60, self.elapsed%60))
+		# self.frame.after(dt, lambda: self.tick(dt=dt))
 
 
 	def play(self):
